@@ -82,10 +82,201 @@ Mysql instance has to be part of private subnet so that outside world can't conn
 
 So Lets start:
 
+>provider "aws" {          <br>
+>  region  = "ap-south-1"  <br>
+>  profile = "Zulu"        <br>
+>}                         <br>
+
+1. Choose the Provider whom Terraform will contact. In my case it is AWS.
 
 
+>resource "aws_vpc" "main" {            <br>
+>  cidr_block       = "192.168.0.0/16"  <br>
+>  instance_tenancy = "default"         <br>
+>                                       <br>
+>  tags = {                             <br>
+>    Name = "Nirbhay-VPC"               <br>
+>  }                                    <br>
+>}                                      <br>
 
+2. Create IaaS code for terraform that will create a VPC for you. Now we have to create two subnets inside our VPC.
 
+>resource "aws_subnet" "subnet1" {       <br>
+>  vpc_id     = "${aws_vpc.main.id}"     <br>
+>  cidr_block = "192.168.1.0/24"         <br>
+>  map_public_ip_on_launch = true        <br>
+>  availability_zone = "ap-south-1a"     <br>
+>  tags = {                              <br>
+>    Name = "Nirbhay-Subnet_Public-1a"   <br>
+>  }                                     <br>
+>}                                       <br>
+
+3. Create a public Subnet that will be accessible to the public World.
+
+>resource "aws_subnet" "subnet2" {        <br>
+>  vpc_id     = "${aws_vpc.main.id}"      <br>
+>  cidr_block = "192.168.2.0/24"          <br>
+>  availability_zone = "ap-south-1a"      <br>
+>  tags = {                               <br>
+>    Name = "Nirbhay-Subnet_Private-1b"   <br>
+>  }                                      <br>
+>}                                        <br>
+
+4. Create a private Subnet that will be restricted for the access to the public world.
+
+>resource "aws_internet_gateway" "gw" {  <br>
+>  vpc_id = "${aws_vpc.main.id}"         <br>
+>  tags = {                              <br>
+>    Name = "Nirbhay-Gateway"            <br>
+>  }                                     <br>
+>}                                       <br>
+
+5. Create an Internet Gateway for our VPC so that it can be connected to the outside World.
+
+>resource "aws_route_table" "rt" {                   <br>
+>  vpc_id = "${aws_vpc.main.id}"                     <br>
+>  route {                                           <br>
+>    cidr_block = "0.0.0.0/0"                        <br>
+>    gateway_id = "${aws_internet_gateway.gw.id}"    <br>
+>  }                                                 <br>
+>  tags = {                                          <br>
+>    Name = "Nirbhay-pubic-rt"                       <br>
+>  }                                                 <br>
+>}                                                   <br>
+
+6. Create a Route Table for our VPC so that our instances could connect to the outside world.
+
+>resource "aws_route_table_association" "subnet_association" { <br>
+>  subnet_id      = aws_subnet.subnet1.id                      <br>
+>  route_table_id = aws_route_table.rt.id                      <br>
+>}                                                             <br>
+
+7. Associate your Route Table with Public Subnet.
+
+>resource "aws_security_group" "sg_webserver" {   <br>
+>  name        = "Security_group_for_Wordpress"   <br>
+>  description = "Allow ssh and httpd"            <br> 
+>  vpc_id      = "${aws_vpc.main.id}"             <br>
+>  ingress {                                      <br>
+>    description = "SSH Port"                     <br>
+>    from_port   = 22                             <br>
+>    to_port     = 22                             <br>
+>    protocol    = "tcp"                          <br>
+>    cidr_blocks = ["0.0.0.0/0"]                  <br>
+>  }                                              <br>
+>   ingress {                                     <br>
+>    description = "HTTPD Port"                   <br>
+>    from_port   = 80                             <br>
+>    to_port     = 80                             <br> 
+>    protocol    = "tcp"                          <br>
+>    cidr_blocks = ["0.0.0.0/0"]                  <br>
+>  }                                              <br>
+>  egress {                                       <br>
+>    from_port   = 0                              <br>
+>    to_port     = 0                              <br>
+>    protocol    = "-1"                           <br>
+>    cidr_blocks = ["0.0.0.0/0"]                  <br> 
+>  }                                              <br>
+>  tags = {                                       <br>
+>    Name = "Nirbhay_sg1"                         <br>
+>  }                                              <br>
+>}                                                <br>
+
+8. Create a Security Group allowing Port 80 so that our client can connect to Wordpress and allowing port 22 so that our client can do SSH.
+
+>resource "aws_security_group" "sg_database" {    <br>
+>  name        = "for_MYSQL"                      <br> 
+>  description = "Allow MySQL"                    <br>
+>  vpc_id      = "${aws_vpc.main.id}"             <br>
+>  ingress {                                      <br>
+>    description = "MySQL"                        <br>
+>    from_port   = 3306                           <br>
+>    to_port     = 3306                           <br>
+>    protocol    = "tcp"                          <br>
+>  }                                              <br>
+>  egress {                                       <br>
+>    from_port   = 0                              <br>
+>    to_port     = 0                              <br>
+>    protocol    = "-1"                           <br> 
+>    cidr_blocks = ["0.0.0.0/0"]                  <br>
+>  }                                              <br>
+>  tags = {                                       <br>
+>    Name = "Nirbhay_sg2"                         <br>
+>  }                                              <br>
+>}                                                <br>
+
+9. Create a Security Group allowing Port 3306 so that our wordpress can connect to MySQL.
+
+>variable ssh_key_name {                                     <br>
+>    default = "mykey5555"                                   <br>
+>}                                                           <br>
+>resource "tls_private_key" "key-pair" {                     <br>
+>  algorithm = "RSA"                                         <br>
+>  rsa_bits = 4096                                           <br>
+>}                                                           <br>
+> resource "local_file" "private-key"{                       <br>
+> content = tls_private_key.key-pair.private_key_pem         <br>
+> filename = "${var.ssh_key_name}.pem"                       <br>
+> file_permission = "0400"                                   <br>
+>}                                                           <br>
+>                                                            <br>
+>resource "aws_key_pair" "deployer" {                        <br> 
+>  key_name   = var.ssh_key_name                             <br>
+>  public_key = tls_private_key.key-pair.public_key_openssh  <br>
+>}                                                           <br>
+>                                                            <br>
+
+10. Create a Key-Pair for our Instances or use already created key-pair. Here i created the Key with RSA Algorithm which Encrypt our data.
+
+>resource "aws_instance" "web" {                                           <br>
+>  ami           = "ami-000cbce3e1b899ebd"                                 <br>
+>  instance_type = "t2.micro"                                              <br>
+>  availability_zone = "ap-south-1a"                                       <br>
+>  subnet_id      = "${aws_subnet.subnet1.id}"                             <br>
+>  associate_public_ip_address = true                                      <br>
+>  key_name = "${var.ssh_key_name}"                                        <br>
+>  vpc_security_group_ids = ["${aws_security_group.sg_webserver.id}"]      <br>
+>                                                                          <br>
+>  tags = {                                                                <br>
+>    Name = "NirbhayOS-wordpress"                                          <br>
+>  }                                                                       <br>
+>}                                                                         <br>
+
+11. Launch an EC2 instance that has already wordpress in it and attach it with the security group having enabled port 80 so that our clients could connect it.
+
+>resource "aws_instance" "Mysql-OS" {                                      <br>
+>  ami           = "ami-0019ac6129392a0f2"                                 <br>
+>  availability_zone = "ap-south-1a"                                       <br>
+>  instance_type = "t2.micro"                                              <br>
+>  subnet_id      = "${aws_subnet.subnet2.id}"                             <br>
+>  key_name = "${var.ssh_key_name}"                                        <br>
+>  vpc_security_group_ids = ["${aws_security_group.sg_database.id}"]       <br>
+>                                                                          <br>
+>  tags = {                                                                <br>
+>    Name = "NirbhayOS-mysql"                                              <br>
+>  }                                                                       <br>
+>}                                                                         <br>
+
+12. Launch an EC2 instance that has already MySQL in it and attach it with the security group having enabled port 3306 so that our wordpress could connect to it.
+
+>resource "null_resource" "nullremote1" {
+>  connection {
+>    type = "ssh"
+>    user = "bitnami"
+>    host = aws_instance.web.public_ip
+>    private_key = file("${var.ssh_key_name}.pem")
+>  }
+>
+>  provisioner "remote-exec" {
+>    inline = [
+>      "sudo /opt/bitnami/ctlscript.sh restart apache",
+>      "sudo /opt/bitnami/ctlscript.sh status",
+>
+>    ]
+>  }
+>}
+
+13. For testing purpose you can create null resource and checking the SSH and Public IPs and getting the Public IPs and configuring our Apache Server.
 
 
 
