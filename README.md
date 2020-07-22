@@ -2,6 +2,7 @@
 ### Before explanation of my task, let me introduce you to these terms.
 
 # VIRTUAL PRIVATE CLOUD(VPC)
+<img src="images/aa.jpg">
 Amazon Virtual Private Cloud (VPC) allows the users to use AWS resources in a virtual network. The users can customize their virtual networking environment as they like, such as selecting own IP address range, creating subnets, and configuring route tables and network gateways. The list of AWS services that can be used with Amazon VPC are :-
 1. Amazon EC2
 2. Amazon Route 53
