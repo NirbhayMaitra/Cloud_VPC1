@@ -279,6 +279,10 @@ So Lets start:
 13. For testing purpose you can create null resource and checking the SSH and Public IPs and getting the Public IPs and configuring our Apache Server.
 
 
+### So our setup is Ready and we are good to go. But first let me show you i haven't created anything beforehand.
+
+
+
 
 
 
