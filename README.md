@@ -292,27 +292,35 @@ Now Run Terraform init command. It will download the Plugins for you. Then run T
 it by going inside your AWS console.
 
 <img src="images/17.JPG">
+
 Wordpress instance has been deployed.
 
 <img src="images/18.JPG">
+
 MySQL instance has been deployed.
 
 <img src="images/19.JPG">
+
 VPC has been created.
 
 <img src="images/20.JPG">
+
 Public and Private Subnets have been created
 
 <img src="images/21.JPG">
+
 Route Table has been created.
 
 <img src="images/22.JPG">
+
 Internet Gateway has been created.
 
 <img src="images/23.JPG">
+
 Now go to Wordpress instance and copy the public IP of the instance.
 
 <img src="images/24.JPG">
+
 Paste it on your Browser and you will notice the Wordpress site come up. 
 
 ## Task completed Successfully. If you have any questions, Feel free to contact me or mail me at nirbhaymaitra684@gmail.com. 
